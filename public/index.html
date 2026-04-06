@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Nexus Network — Federation Dashboard</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0e0e0f;
+    --bg2: #161618;
+    --bg3: #1e1e21;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8e8e8;
+    --muted: #888;
+    --green: #1D9E75;
+    --green-dim: rgba(29,158,117,0.15);
+    --amber: #BA7517;
+    --amber-dim: rgba(186,117,23,0.15);
+    --blue: #378ADD;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, 'Segoe UI', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 10;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .logo {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: -0.3px;
+    color: var(--text);
+  }
+  .logo span { color: var(--green); }
+
+  .status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .pulse {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 20px 48px;
+  }
+
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .metric {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .metric-label {
+    font-size: 11px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-size: 26px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    line-height: 1;
+    color: var(--text);
+  }
+
+  .metric-value.green { color: var(--green); }
+  .metric-value.amber { color: var(--amber); }
+
+  .metric-sub {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.7px;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+
+  .products {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .product {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+
+  .product-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+  }
+
+  .product-name {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text);
+  }
+
+  .badge {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.3px;
+  }
+
+  .badge-green { background: var(--green-dim); color: var(--green); }
+  .badge-amber { background: var(--amber-dim); color: var(--amber); }
+
+  .product-count {
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    line-height: 1;
+  }
+
+  .product-desc {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 3px;
+  }
+
+  .bar-track {
+    background: var(--bg3);
+    border-radius: 3px;
+    height: 3px;
+    margin-top: 10px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: var(--green);
+    transition: width 1s ease;
+  }
+
+  .bar-fill.amber { background: var(--amber); }
+
+  .grid2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .grid2 { grid-template-columns: 1fr; }
+    .products { grid-template-columns: 1fr 1fr; }
+  }
+
+  .panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+  }
+
+  .panel-title {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.6px;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+
+  .node-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .node-row:last-child { border-bottom: none; }
+
+  .node-left {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+  }
+
+  .dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  .dot.amber { background: var(--amber); }
+
+  .node-domain {
+    font-size: 12px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    color: var(--text);
+  }
+
+  .node-stat {
+    font-size: 12px;
+    color: var(--muted);
+  }
+
+  .event-row {
+    display: flex;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+  }
+
+  .event-row:last-child { border-bottom: none; }
+
+  .event-time {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: monospace;
+    white-space: nowrap;
+    padding-top: 1px;
+    min-width: 50px;
+  }
+
+  .event-text {
+    font-size: 12px;
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  .event-domain {
+    color: var(--green);
+    font-family: monospace;
+  }
+
+  .chart-panel {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 20px;
+  }
+
+  .chart-legend {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin-bottom: 12px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .footer-note {
+    font-size: 11px;
+    color: var(--muted);
+  }
+
+  .footer-links {
+    display: flex;
+    gap: 16px;
+  }
+
+  .footer-links a {
+    font-size: 12px;
+    color: var(--muted);
+    text-decoration: none;
+    transition: color 0.15s;
+  }
+
+  .footer-links a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="logo"><span>Nexus</span> Network</div>
+  <div class="status">
+    <div class="pulse" id="pulse"></div>
+    <span id="live-clock">connecting...</span>
+  </div>
+</div>
+
+<main>
+  <div class="metrics">
+    <div class="metric">
+      <div class="metric-label">Nodes online</div>
+      <div class="metric-value green" id="m-nodes">—</div>
+      <div class="metric-sub" id="m-nodes-sub">— new this hour</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Collective RAM</div>
+      <div class="metric-value" id="m-ram">—</div>
+      <div class="metric-sub" id="m-ram-sub">— in use</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Storage</div>
+      <div class="metric-value" id="m-storage">—</div>
+      <div class="metric-sub" id="m-storage-sub">— used</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">CPU cores</div>
+      <div class="metric-value" id="m-cpu">—</div>
+      <div class="metric-sub" id="m-cpu-sub">— avg load</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Compute jobs</div>
+      <div class="metric-value amber" id="m-jobs">—</div>
+      <div class="metric-sub">distributed this hour</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">Countries</div>
+      <div class="metric-value" id="m-countries">—</div>
+      <div class="metric-sub">federating globally</div>
+    </div>
+  </div>
+
+  <div class="section-label">Product adoption across nodes</div>
+  <div class="products" id="products-grid">
+    <div class="product"><div class="product-top"><div class="product-name">Loading...</div></div></div>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <div class="panel-title">Top nodes by capacity</div>
+      <div id="top-nodes"><div class="node-row"><div class="node-left"><div class="node-domain" style="color:var(--muted)">Loading...</div></div></div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title">Federation events</div>
+      <div id="fed-events"><div class="event-row"><div class="event-text" style="color:var(--muted)">Connecting to mesh...</div></div></div>
+    </div>
+  </div>
+
+  <div class="chart-panel">
+    <div class="panel-title">Collective compute — past 24 hours</div>
+    <div class="chart-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:#1D9E75"></div>NexusCompute offload</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#378ADD"></div>Nexus.computer AI jobs</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#BA7517"></div>Deploy builds</div>
+    </div>
+    <div style="position:relative;height:120px;width:100%">
+      <canvas id="compute-chart"></canvas>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-note">Voluntary telemetry only · No personal data · NFP v1.0 · Open source</div>
+    <div class="footer-links">
+      <a href="https://github.com/The-No-Hands-company/Nexus-Network" target="_blank">GitHub</a>
+      <a href="/api/stats" target="_blank">Raw API</a>
+      <a href="https://github.com/The-No-Hands-company" target="_blank">The No Hands Company</a>
+    </div>
+  </div>
+</main>
+
+<script>
+const PRODUCT_META = {
+  'nexus':          { label: 'Nexus', desc: 'Chat & communities', status: 'live' },
+  'nexus-hosting':  { label: 'Hosting', desc: 'Web hosting layer', status: 'live' },
+  'nexus-cloud':    { label: 'Cloud', desc: 'File sync & storage', status: 'live' },
+  'nexus-deploy':   { label: 'Deploy', desc: 'App deployments', status: 'beta' },
+  'nexus-computer': { label: '.computer', desc: 'AI cloud computer', status: 'beta' },
+  'nexus-vault':    { label: 'Vault', desc: 'Key management', status: 'beta' },
+}
+
+function fmtRam(gb) {
+  if (gb >= 1024) return (gb / 1024).toFixed(1) + ' TB'
+  return Math.round(gb) + ' GB'
+}
+
+function fmtStorage(gb) {
+  if (gb >= 1_048_576) return (gb / 1_048_576).toFixed(1) + ' EB'
+  if (gb >= 1024) return (gb / 1024).toFixed(1) + ' TB'
+  return Math.round(gb) + ' GB'
+}
+
+function fmtNum(n) {
+  if (n >= 1_000_000) return (n / 1_000_000).toFixed(1) + 'M'
+  if (n >= 1000) return (n / 1000).toFixed(1) + 'K'
+  return n.toLocaleString()
+}
+
+function timeSince(ts) {
+  const s = Math.floor((Date.now() - ts) / 1000)
+  if (s < 60) return s + 's ago'
+  if (s < 3600) return Math.floor(s / 60) + 'm ago'
+  return Math.floor(s / 3600) + 'h ago'
+}
+
+let chart = null
+
+function initChart(history) {
+  const ctx = document.getElementById('compute-chart')
+  if (chart) { chart.destroy() }
+  const labels = history.map((_, i) => i % 6 === 0 ? `${i}h` : '')
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [
+        { data: history.map(h => h.compute_offload), borderColor: '#1D9E75', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.4 },
+        { data: history.map(h => h.ai_jobs), borderColor: '#378ADD', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.4 },
+        { data: history.map(h => h.deploy_builds), borderColor: '#BA7517', borderWidth: 1.5, pointRadius: 0, fill: false, tension: 0.4 },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { enabled: false } },
+      scales: {
+        x: { grid: { color: 'rgba(255,255,255,0.04)' }, ticks: { color: '#666', font: { size: 10 } } },
+        y: { display: false }
+      },
+      animation: { duration: 600 }
+    }
+  })
+}
+
+function renderStats(s) {
+  document.getElementById('m-nodes').textContent = fmtNum(s.nodes_online)
+  document.getElementById('m-nodes-sub').textContent = `+${s.nodes_delta_hour} this hour`
+  document.getElementById('m-ram').textContent = fmtRam(s.total_ram_gb)
+  document.getElementById('m-ram-sub').textContent = `${s.ram_used_pct}% in use`
+  document.getElementById('m-storage').textContent = fmtStorage(s.total_storage_gb)
+  document.getElementById('m-storage-sub').textContent = `${s.storage_used_pct}% used`
+  document.getElementById('m-cpu').textContent = fmtNum(s.total_cpu_cores)
+  document.getElementById('m-cpu-sub').textContent = `${s.avg_cpu_load_pct}% avg load`
+  document.getElementById('m-jobs').textContent = fmtNum(s.compute_jobs_hour)
+  document.getElementById('m-countries').textContent = s.countries
+
+  const maxCount = Math.max(...Object.values(s.product_counts), 1)
+  document.getElementById('products-grid').innerHTML = Object.entries(PRODUCT_META).map(([key, meta]) => {
+    const count = s.product_counts[key] ?? 0
+    const pct = Math.round((count / maxCount) * 100)
+    return `
+      <div class="product">
+        <div class="product-top">
+          <div class="product-name">${meta.label}</div>
+          <div class="badge badge-${meta.status === 'live' ? 'green' : 'amber'}">${meta.status}</div>
+        </div>
+        <div class="product-count">${fmtNum(count)}</div>
+        <div class="product-desc">${meta.desc}</div>
+        <div class="bar-track"><div class="bar-fill ${meta.status !== 'live' ? 'amber' : ''}" style="width:${pct}%"></div></div>
+      </div>`
+  }).join('')
+
+  document.getElementById('top-nodes').innerHTML = s.top_nodes.map(n => `
+    <div class="node-row">
+      <div class="node-left">
+        <div class="dot"></div>
+        <div class="node-domain">${n.domain}</div>
+      </div>
+      <div class="node-stat">${fmtRam(n.ram_gb)} · ${n.cpu_cores} cores</div>
+    </div>
+  `).join('') || '<div class="node-row"><div class="node-domain" style="color:var(--muted)">No nodes yet</div></div>'
+
+  document.getElementById('fed-events').innerHTML = s.recent_events.slice(0, 6).map(e => `
+    <div class="event-row">
+      <div class="event-time">${timeSince(e.timestamp)}</div>
+      <div class="event-text"><span class="event-domain">${e.domain}</span> — ${e.detail}</div>
+    </div>
+  `).join('') || '<div class="event-row"><div class="event-text" style="color:var(--muted)">No events yet</div></div>'
+
+  if (s.compute_history?.length) initChart(s.compute_history)
+}
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+  const ws = new WebSocket(`${proto}://${location.host}/ws`)
+
+  ws.onopen = () => {
+    document.getElementById('live-clock').textContent = 'live'
+    document.getElementById('pulse').style.background = '#1D9E75'
+  }
+
+  ws.onmessage = (e) => {
+    try {
+      const msg = JSON.parse(e.data)
+      if (msg.type === 'stats') renderStats(msg.data)
+    } catch {}
+  }
+
+  ws.onclose = () => {
+    document.getElementById('live-clock').textContent = 'reconnecting...'
+    document.getElementById('pulse').style.background = '#BA7517'
+    setTimeout(connect, 3000)
+  }
+
+  ws.onerror = () => ws.close()
+}
+
+setInterval(() => {
+  const t = new Date()
+  document.getElementById('live-clock').textContent =
+    t.toUTCString().slice(17, 25) + ' UTC'
+}, 1000)
+
+connect()
+
+fetch('/api/stats')
+  .then(r => r.json())
+  .then(renderStats)
+  .catch(() => {})
+</script>
+</body>
+</html>
