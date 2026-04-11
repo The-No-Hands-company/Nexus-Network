@@ -7,6 +7,7 @@ import { WebSocketServer, WebSocket } from 'ws'
 import path from 'path'
 import heartbeatRouter from './routes/heartbeat.js'
 import statsRouter from './routes/stats.js'
+import cloudRouter from './routes/cloud.js'
 import { getNetworkStats } from './db/index.js'
 
 const app = express()
@@ -46,6 +47,7 @@ const apiLimiter = rateLimit({
 
 app.use('/api/heartbeat', heartbeatLimiter, heartbeatRouter)
 app.use('/api/stats', apiLimiter, statsRouter)
+app.use(cloudRouter)
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, ts: Date.now() })
