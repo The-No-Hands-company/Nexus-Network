@@ -18,12 +18,14 @@ const PORT = parseInt(process.env.PORT ?? '3700', 10)
 const PUSH_INTERVAL_MS = parseInt(process.env.PUSH_INTERVAL_MS ?? '5000', 10)
 
 app.use(helmet({
+  frameguard: false,
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: ["'self'", "'unsafe-inline'", "cdnjs.cloudflare.com"],
       connectSrc: ["'self'", "ws:", "wss:"],
       styleSrc: ["'self'", "'unsafe-inline'"],
+      frameAncestors: ["*"],
     }
   }
 }))
