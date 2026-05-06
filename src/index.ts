@@ -9,6 +9,7 @@ import heartbeatRouter from './routes/heartbeat.js'
 import statsRouter from './routes/stats.js'
 import cloudRouter from './routes/cloud.js'
 import { getNetworkStats } from './db/index.js'
+import { hasNetworkCloudIntegration, startNexusNetworkCloudRegistrationHeartbeat, startNexusNetworkCloudSourceOfTruthSync } from './integrations/nexus-cloud.js'
 
 const app = express()
 const server = createServer(app)
@@ -16,6 +17,8 @@ const wss = new WebSocketServer({ server, path: '/ws' })
 
 const PORT = parseInt(process.env.PORT ?? '3700', 10)
 const PUSH_INTERVAL_MS = parseInt(process.env.PUSH_INTERVAL_MS ?? '5000', 10)
+let stopCloudHeartbeat: (() => void) | null = null
+let stopCloudSourceOfTruthSync: (() => void) | null = null
 
 app.use(helmet({
   frameguard: false,
@@ -86,4 +89,19 @@ setInterval(() => {
 server.listen(PORT, () => {
   console.log(`Nexus-Network running on http://localhost:${PORT}`)
   console.log(`WebSocket live updates on ws://localhost:${PORT}/ws`)
+
+  if (hasNetworkCloudIntegration()) {
+    stopCloudHeartbeat = startNexusNetworkCloudRegistrationHeartbeat(PORT)
+    stopCloudSourceOfTruthSync = startNexusNetworkCloudSourceOfTruthSync()
+  }
 })
+
+function gracefulShutdown(signal: string): void {
+  console.log(`[nexus-network] Received ${signal}, shutting down`)
+  stopCloudHeartbeat?.()
+  stopCloudSourceOfTruthSync?.()
+  server.close(() => process.exit(0))
+}
+
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'))
+process.on('SIGINT', () => gracefulShutdown('SIGINT'))

@@ -1,4 +1,5 @@
 import { Router, type Request, type Response } from 'express';
+import { getLatestNetworkCloudSnapshot } from '../integrations/nexus-cloud.js';
 
 export type NexusCloudNetworkApp = {
   id: string;
@@ -107,6 +108,10 @@ router.post('/api/cloud/register', (req: Request, res: Response) => {
 
 router.get('/api/cloud/client', (_req, res) => {
   res.json(buildNetworkCloudClient());
+});
+
+router.get('/api/cloud/source-of-truth', (_req, res) => {
+  res.json({ snapshot: getLatestNetworkCloudSnapshot() });
 });
 
 export default router;
